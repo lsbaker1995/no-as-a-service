@@ -1,0 +1,51 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write        # Required for WIF to request an OIDC token
+
+env:
+  PROJECT_ID: project-33095c59-49a0-473f-aa6
+  REGION: us-central1
+  SERVICE: no-as-a-service
+  IMAGE: us-central1-docker.pkg.dev/project-33095c59-49a0-473f-aa6/naas-repo/no-as-a-service
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE:${{ github.sha }} .
+
+      - name: Push image to Artifact Registry
+        run: docker push $IMAGE:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE \
+            --image=$IMAGE:${{ github.sha }} \
+            --region=$REGION \
+            --platform=managed \
+            --allow-unauthenticated \
+            --port=3000
