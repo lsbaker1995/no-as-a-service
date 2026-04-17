@@ -8,7 +8,7 @@
 Ever needed a graceful way to say “no”?  
 This tiny API returns random, generic, creative, and sometimes hilarious rejection reasons — perfectly suited for any scenario: personal, professional, student life, dev life, or just because.
 
-Built for humans, excuses, and humor.
+Built for humans, excuses, and humor, test.
 
 <!-- GitAds Sponsorship Badge -->
 <p align="center">
