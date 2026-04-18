@@ -1,0 +1,42 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/**'   # only triggers when tf files change
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: infrastructure/tf-naas
+
+      - name: Terraform Plan
+        run: terraform plan -var-file="terraform.tfvars"
+        working-directory: infrastructure/tf-naas
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'   # only applies on main, not PRs
+        run: terraform apply -auto-approve -var-file="terraform.tfvars"
+        working-directory: infrastructure/tf-naas
